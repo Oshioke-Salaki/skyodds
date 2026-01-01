@@ -1,150 +1,222 @@
 "use client";
 
-import React, { useState } from "react";
-import { Shield, ShieldCheck, Info, ArrowUpRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Loader2, Wallet, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator"; // shadcn component
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-export function OrderForm({ marketPrice }: { marketPrice: number }) {
-  const [outcome, setOutcome] = useState<"DELAY" | "ONTIME">("DELAY");
+interface OrderFormProps {
+  market: {
+    id: string;
+    label: string;
+    price: number;
+  };
+}
+
+export function OrderForm({ market }: OrderFormProps) {
+  const [isBuy, setIsBuy] = useState(true);
+  const [outcome, setOutcome] = useState<"YES" | "NO">("YES");
   const [amount, setAmount] = useState<string>("");
-  const [isShielded, setIsShielded] = useState(false);
+  const [shares, setShares] = useState<string>("0");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Logic
+  const yesPrice = market.price;
+  const noPrice = 100 - market.price;
+  // If Buying YES: Price is yesPrice. If Selling YES: Price is roughly yesPrice (ignoring spread for UI demo)
+  // For simplicity in this demo: Active Price tracks the Outcome Price
+  const activePrice = outcome === "YES" ? yesPrice : noPrice;
 
   const potentialReturn = amount
-    ? (parseFloat(amount) * (100 / marketPrice)).toFixed(2)
+    ? (parseFloat(amount) / (activePrice / 100)).toFixed(2)
     : "0.00";
-  const roi = amount ? ((100 / marketPrice - 1) * 100).toFixed(0) : "0";
+
+  const profit = amount
+    ? (parseFloat(potentialReturn) - parseFloat(amount)).toFixed(2)
+    : "0.00";
+
+  useEffect(() => {
+    if (!amount || isNaN(Number(amount))) {
+      setShares("0");
+      return;
+    }
+    const shareCount = parseFloat(amount) / (activePrice / 100);
+    setShares(shareCount.toFixed(2));
+  }, [amount, activePrice]);
 
   return (
-    <Card className="bg-white border border-zinc-200 shadow-sm">
-      <CardHeader className="pb-4 border-b border-zinc-100">
-        <CardTitle className="flex items-center justify-between">
-          <span className="text-lg font-bold text-zinc-900 tracking-tight">
-            Trade Position
-          </span>
-          <span className="text-xs font-medium text-zinc-500 font-mono bg-zinc-50 px-2 py-1 rounded border border-zinc-100">
-            BAL: 2,450 USDC
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6 space-y-6">
-        {/* 1. OUTCOME SELECTOR */}
-        <Tabs
-          defaultValue="DELAY"
-          onValueChange={(v) => setOutcome(v as any)}
-          className="w-full"
+    <Card className="bg-white border border-zinc-200 shadow-sm overflow-hidden py-0 ring-1 ring-black/5">
+      {/* --- HEADER: BUY / SELL TABS (Neutral) --- */}
+      <div className="flex border-b border-zinc-100">
+        <button
+          onClick={() => setIsBuy(true)}
+          className={cn(
+            "flex-1 py-4 text-sm font-bold transition-all relative uppercase tracking-wider",
+            isBuy
+              ? "text-black "
+              : "text-zinc-400 hover:text-black hover:bg-zinc-50/50"
+          )}
         >
-          <TabsList className="grid w-full grid-cols-2 bg-zinc-100 p-1 h-11">
-            <TabsTrigger
-              value="DELAY"
-              className="data-[state=active]:bg-white data-[state=active]:text-red-600 data-[state=active]:shadow-sm font-semibold"
-            >
-              DELAY (Yes)
-            </TabsTrigger>
-            <TabsTrigger
-              value="ONTIME"
-              className="data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-sm font-semibold"
-            >
-              ON TIME (No)
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {/* 2. PRICE INFO */}
-        <div className="flex justify-between items-end">
-          <span className="text-sm text-zinc-500 font-medium">
-            Market Price
-          </span>
-          <div className="text-right">
-            <span className="text-3xl font-bold text-zinc-900 tracking-tighter">
-              {marketPrice}¢
-            </span>
-            <span className="block text-[10px] text-zinc-400 font-medium uppercase tracking-wide">
-              Per Share
-            </span>
-          </div>
-        </div>
-
-        {/* 3. INPUT AMOUNT */}
-        <div className="space-y-2">
-          <div className="relative">
-            <span className="absolute left-3 top-3 text-zinc-400 font-medium">
-              $
-            </span>
-            <Input
-              type="number"
-              placeholder="0.00"
-              className="pl-7 h-12 bg-white border-zinc-200 text-lg text-zinc-900 placeholder:text-zinc-300 focus-visible:ring-black rounded-md"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-zinc-400 uppercase font-medium tracking-wide">
-            <span>Min: $5</span>
-            <span>Max: $5,000</span>
-          </div>
-        </div>
-
-        <Separator className="bg-zinc-100" />
-
-        {/* 4. ZK PRIVACY TOGGLE (Clean Box) */}
-        <div
-          className={`p-4 rounded-lg border transition-all duration-200 ${
-            isShielded ? "bg-zinc-50 border-black" : "bg-white border-zinc-200"
-          }`}
+          Buy
+          {isBuy && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
+          )}
+        </button>
+        <button
+          onClick={() => setIsBuy(false)}
+          className={cn(
+            "flex-1 py-4 text-sm font-bold transition-all relative uppercase tracking-wider",
+            !isBuy
+              ? "text-black "
+              : "text-zinc-400 hover:text-black hover:bg-zinc-50/50"
+          )}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              {isShielded ? (
-                <ShieldCheck className="w-4 h-4 text-black" />
-              ) : (
-                <Shield className="w-4 h-4 text-zinc-400" />
-              )}
-              <span
-                className={`text-sm font-bold ${
-                  isShielded ? "text-black" : "text-zinc-500"
-                }`}
-              >
-                Shielded Bet
-              </span>
-            </div>
-            <Switch
-              checked={isShielded}
-              onCheckedChange={setIsShielded}
-              className="data-[state=checked]:bg-black"
-            />
-          </div>
-          <p className="text-xs text-zinc-500 leading-relaxed">
-            {isShielded
-              ? "Zero-Knowledge proofs enabled. Transaction is anonymous."
-              : "Standard public transaction visible on block explorer."}
-          </p>
-        </div>
+          Sell
+          {!isBuy && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black" />
+          )}
+        </button>
+      </div>
 
-        {/* 5. SUMMARY & ACTION */}
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm bg-zinc-50 p-3 rounded border border-zinc-100">
-            <span className="text-zinc-500">Est. Payout</span>
-            <span className="text-emerald-600 font-mono font-bold">
-              ${potentialReturn} (+{roi}%)
-            </span>
-          </div>
-          <Button
-            className={`w-full h-12 text-base font-bold shadow-lg transition-transform active:scale-[0.98] ${
-              outcome === "DELAY"
-                ? "bg-red-600 hover:bg-red-700 text-white"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white"
-            }`}
+      <div className="px-6 pb-6 space-y-8">
+        {/* --- OUTCOME SELECTOR (YES=Green, NO=Red) --- */}
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => setOutcome("YES")}
+            className={cn(
+              "py-2 px-4 border-2 transition-all flex items-center justify-center gap-1 group rounded-lg relative overflow-hidden",
+              outcome === "YES"
+                ? "bg-emerald-600 border-emerald-600 text-white shadow-md"
+                : "bg-white border-zinc-200 text-zinc-500 hover:border-emerald-500 hover:text-emerald-600"
+            )}
           >
-            {isShielded ? "Generate Proof & Confirm" : `Confirm ${outcome}`}
-            <ArrowUpRight className="ml-2 w-4 h-4" />
-          </Button>
+            <span className="text-base font-bold uppercase opacity-90 z-10">
+              Yes
+            </span>
+            <span className="text-2xl font-mono font-bold tracking-tighter z-10">
+              {yesPrice}¢
+            </span>
+            {outcome === "YES" && (
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setOutcome("NO")}
+            className={cn(
+              "py-2 px-4 border-2 transition-all flex justify-center items-center rounded-lg gap-1 group relative overflow-hidden",
+              outcome === "NO"
+                ? "bg-red-600 border-red-600 text-white shadow-md"
+                : "bg-white border-zinc-200 text-zinc-500 hover:border-red-600 hover:text-red-600"
+            )}
+          >
+            <span className="text-base font-bold uppercase opacity-90 z-10">
+              No
+            </span>
+            <span className="text-2xl font-mono font-bold tracking-tighter z-10">
+              {noPrice}¢
+            </span>
+            {outcome === "NO" && (
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+            )}
+          </button>
         </div>
-      </CardContent>
+
+        {/* --- AMOUNT INPUT --- */}
+        <div className="space-y-6">
+          <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+            <span>Enter Amount</span>
+            <div className="flex items-center gap-1.5 text-black">
+              <Wallet className="w-3 h-3" />
+              <span className="font-mono">$2,450.00</span>
+            </div>
+          </div>
+
+          <div className="relative flex items-center justify-center border-b border-zinc-200 pb-2">
+            <span className="text-zinc-300 text-4xl font-light mr-2">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+              }}
+              className="w-full bg-transparent border-none text-right text-4xl font-extrabold text-black focus:ring-0 p-0 placeholder:text-zinc-100 font-mono tracking-tighter outline-0"
+            />
+          </div>
+
+          {/* Presets */}
+          <div className="flex justify-between gap-2">
+            {["10", "50", "100", "Max"].map((val) => (
+              <button
+                key={val}
+                onClick={() =>
+                  val === "Max"
+                    ? setAmount("2450")
+                    : setAmount((prev) =>
+                        (parseFloat(prev || "0") + parseFloat(val)).toString()
+                      )
+                }
+                className="flex-1 py-2 text-[10px] font-bold text-zinc-600 border border-zinc-200 bg-white hover:bg-black hover:text-white hover:border-black transition-all uppercase tracking-wide"
+              >
+                {val === "Max" ? "Max" : `+$${val}`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* --- RECEIPT --- */}
+        {amount && (
+          <div className="bg-zinc-50 p-4 border border-zinc-100 space-y-3">
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500 font-medium">Est. Shares</span>
+              <span className="font-mono font-bold text-black">{shares}</span>
+            </div>
+            <div className="w-full h-px bg-zinc-200" />
+            <div className="flex justify-between items-baseline">
+              <span className="text-base font-bold text-black capitalize">
+                To Win 💵
+              </span>
+              <div className="text-right">
+                <span className="block text-3xl font-mono font-bold text-green-500">
+                  ${potentialReturn}
+                </span>
+                {/* <span
+                  className={cn(
+                    "text-[10px] font-mono",
+                    outcome === "YES" ? "text-emerald-600" : "text-rose-600"
+                  )}
+                >
+                  ${profit} {outcome === "YES" ? "upside" : "hedged"}
+                </span> */}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- EXECUTE BUTTON (Color matches OUTCOME) --- */}
+        <Button
+          disabled={!amount || isSubmitting}
+          onClick={() => setIsSubmitting(true)}
+          className={cn(
+            "w-full h-14 rounded-none text-base font-bold shadow-none transition-all rounded-md active:scale-[0.99] text-white",
+            outcome === "YES"
+              ? "bg-emerald-600 hover:bg-emerald-700" // YES = GREEN
+              : "bg-red-600 hover:bg-red-700" // NO = RED
+          )}
+        >
+          {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          {!isSubmitting &&
+            (isBuy ? (
+              <ArrowUpRight className="w-4 h-4 mr-2" />
+            ) : (
+              <ArrowDownLeft className="w-4 h-4 mr-2" />
+            ))}
+          {isBuy ? "BUY" : "SELL"} {outcome}
+        </Button>
+      </div>
     </Card>
   );
 }

@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/navigation/sidebar";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConnectButton } from "@particle-network/connectkit";
 
 export default function DashboardLayout({
   children,
@@ -30,7 +31,8 @@ export default function DashboardLayout({
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-3">
+          <ConnectButton />
+          {/* <div className="flex items-center gap-3">
             <Button
               size="icon"
               variant="ghost"
@@ -39,7 +41,7 @@ export default function DashboardLayout({
               <Bell className="w-5 h-5" />
             </Button>
 
-            {/* User Profile Avatar */}
+
             <div className="flex items-center gap-3 pl-3 border-l border-zinc-200">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium text-black">0x3A...9f2</p>
@@ -49,7 +51,7 @@ export default function DashboardLayout({
                 JD
               </div>
             </div>
-          </div>
+          </div> */}
         </header>
 
         {/* Page Content - Injected here */}
