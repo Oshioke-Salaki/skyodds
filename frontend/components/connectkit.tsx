@@ -58,7 +58,7 @@ const config = createConfig({
     }),
     authWalletConnectors({
       // Optional, configure this if you're using social logins
-      authTypes: ["email"], // Optional, restricts the types of social logins supported
+      authTypes: ["email", "google", "twitter", "github", "apple", "facebook"], // Optional, restricts the types of social logins supported
       fiatCoin: "USD", // Optional, also supports CNY, JPY, HKD, INR, and KRW
       promptSettingConfig: {
         // Optional, changes the frequency in which the user is asked to set a master or payment password
