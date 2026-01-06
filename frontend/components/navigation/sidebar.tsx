@@ -19,7 +19,7 @@ import { useUserBalance } from "@/hooks/useUserBalance";
 const navItems = [
   { name: "Markets", href: "/markets", icon: Plane },
   { name: "Portfolio", href: "/portfolio", icon: LayoutDashboard },
-  // { name: "Create Market", href: "/create", icon: PlusCircle },
+  { name: "Create Market", href: "/create", icon: PlusCircle },
   // { name: "Governance", href: "/governance", icon: FileText },
   // { name: "Settings", href: "/settings", icon: Settings },
 ];

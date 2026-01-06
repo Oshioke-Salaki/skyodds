@@ -17,6 +17,8 @@ import { SubMarketsList, SubMarket } from "@/components/markets/submarket-list";
 import { MarketTabs } from "@/components/markets/market-tabs";
 import { useAllMarkets } from "@/hooks/useMarketData";
 import { UserPositionsCard } from "@/components/markets/user-positions-card";
+import { MarketGraph } from "@/components/market-graph";
+
 
 export default function MarketPage({
   params,
@@ -37,63 +39,63 @@ export default function MarketPage({
   // Construct Submarkets dynamically from Contract Data
   const dynamicSubmarkets: SubMarket[] = marketData
     ? [
-        {
-          id: "ontime",
-          label: "On Time",
-          icon: Timer,
-          probability: marketData.prices.onTime,
-          price: marketData.prices.onTime,
-          outcomeIndex: 1,
-          trend: "up",
-          history: [
-            { value: 40 },
-            { value: 60 },
-            { value: marketData.prices.onTime },
-          ],
-        },
-        {
-          id: "delay-30",
-          label: "Delayed > 30m",
-          icon: Clock,
-          probability: marketData.prices.delayed30,
-          price: marketData.prices.delayed30,
-          outcomeIndex: 2,
-          trend: "flat",
-          history: [
-            { value: 20 },
-            { value: 25 },
-            { value: marketData.prices.delayed30 },
-          ],
-        },
-        {
-          id: "delay-120",
-          label: "Delayed > 2h",
-          icon: AlertTriangle,
-          probability: marketData.prices.delayed120,
-          price: marketData.prices.delayed120,
-          outcomeIndex: 3,
-          trend: "flat",
-          history: [
-            { value: 10 },
-            { value: 10 },
-            { value: marketData.prices.delayed120 },
-          ],
-        },
-        {
-          id: "cancelled",
-          label: "Cancelled",
-          icon: Ban,
-          probability: marketData.prices.cancelled,
-          price: marketData.prices.cancelled,
-          outcomeIndex: 4,
-          trend: "down",
-          history: [
-            { value: 5 },
-            { value: 2 },
-            { value: marketData.prices.cancelled },
-          ],
-        },
-      ]
+      {
+        id: "ontime",
+        label: "On Time",
+        icon: Timer,
+        probability: marketData.prices.onTime,
+        price: marketData.prices.onTime,
+        outcomeIndex: 1,
+        trend: "up",
+        history: [
+          { value: 40 },
+          { value: 60 },
+          { value: marketData.prices.onTime },
+        ],
+      },
+      {
+        id: "delay-30",
+        label: "Delayed > 30m",
+        icon: Clock,
+        probability: marketData.prices.delayed30,
+        price: marketData.prices.delayed30,
+        outcomeIndex: 2,
+        trend: "flat",
+        history: [
+          { value: 20 },
+          { value: 25 },
+          { value: marketData.prices.delayed30 },
+        ],
+      },
+      {
+        id: "delay-120",
+        label: "Delayed > 2h",
+        icon: AlertTriangle,
+        probability: marketData.prices.delayed120,
+        price: marketData.prices.delayed120,
+        outcomeIndex: 3,
+        trend: "flat",
+        history: [
+          { value: 10 },
+          { value: 10 },
+          { value: marketData.prices.delayed120 },
+        ],
+      },
+      {
+        id: "cancelled",
+        label: "Cancelled",
+        icon: Ban,
+        probability: marketData.prices.cancelled,
+        price: marketData.prices.cancelled,
+        outcomeIndex: 4,
+        trend: "down",
+        history: [
+          { value: 5 },
+          { value: 2 },
+          { value: marketData.prices.cancelled },
+        ],
+      },
+    ]
     : [];
 
   // Set default active market once data loads
@@ -156,6 +158,11 @@ export default function MarketPage({
                 {marketData.status}
               </p>
             </div>
+          </div>
+
+          {/* Graph Section */}
+          <div className="mb-8">
+            <MarketGraph flightId={marketData.id} />
           </div>
 
           {/* The Submarket Table */}
