@@ -13,7 +13,6 @@ import skyOddsAbi from "../../app/abis/SkyOdds.json";
 import { skyOddsAddress } from "@/hooks/generated";
 
 const ADMIN_ADDRESS = "0xB2914810724FE2Fb871960eB200Dea427854b1C7";
-const MANTLE_SEPOLIA_ID = 5003;
 
 interface AdminResolutionPanelProps {
   marketId: string;
@@ -57,7 +56,7 @@ export function AdminResolutionPanel({
     const checkTime = () => {
       const now = Math.floor(Date.now() / 1000);
       const departureTimeSeconds = Number(departureTimestamp);
-      const unlockTime = departureTimeSeconds + 3600;
+      const unlockTime = departureTimeSeconds + 1800;
 
       if (now >= unlockTime) {
         setCanResolve(true);
