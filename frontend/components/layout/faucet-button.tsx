@@ -10,18 +10,17 @@ export function FaucetButton() {
 
   return (
     <Button
-      variant="outline"
+      variant="default"
       size="sm"
       onClick={handleMint}
       disabled={isLoading}
-      className="w-full justify-start text-emerald-600 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-700"
+      className="bg-black hover:bg-zinc-800 text-white font-semibold h-9 w-32 justify-center px-3 gap-2 transition-all duration-200"
     >
       {isLoading ? (
         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
       ) : (
-        <Coins className="w-4 h-4 mr-2" />
+        "Deposit"
       )}
-      Get $1,000 Test USDC
     </Button>
   );
 }
