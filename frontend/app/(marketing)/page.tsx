@@ -79,7 +79,6 @@ export default function LandingPage() {
         >
           The decentralized aviation prediction market.
           <br />
-          Powered by generative AI models and ZK privacy.
         </motion.p>
 
         {/* CTA Buttons */}
