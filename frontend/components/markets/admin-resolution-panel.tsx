@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  useAccount,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-} from "wagmi";
+import { useAccount, useWallets } from "@particle-network/connectkit"; // 1. Use Particle Hook
+import { useWaitForTransactionReceipt } from "wagmi";
+import { encodeFunctionData } from "viem"; // 2. For manual encoding
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck, Loader2 } from "lucide-react";
@@ -14,12 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import skyOddsAbi from "../../app/abis/SkyOdds.json";
 import { skyOddsAddress } from "@/hooks/generated";
 
-// Replace with your actual admin wallet address
 const ADMIN_ADDRESS = "0xB2914810724FE2Fb871960eB200Dea427854b1C7";
+const MANTLE_SEPOLIA_ID = 5003;
 
 interface AdminResolutionPanelProps {
   marketId: string;
-  departureTimestamp: number | bigint; // Accepts BigInt (e.g. 1768340825n)
+  departureTimestamp: number | bigint;
   isResolved: boolean;
 }
 
@@ -28,18 +26,21 @@ export function AdminResolutionPanel({
   departureTimestamp,
   isResolved,
 }: AdminResolutionPanelProps) {
+  // Use Wagmi's useAccount just for reading the address/display
   const { address } = useAccount();
+
+  // Use Particle's useWallets for the actual transaction logic
+  const [primaryWallet] = useWallets();
+
   const [canResolve, setCanResolve] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const {
-    writeContract: resolveMarket,
-    data: hash,
-    isPending,
-  } = useWriteContract();
-
+  // --- WAIT FOR RECEIPT ---
+  // Wagmi can track the hash once we get it from Particle
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
+    hash: txHash,
   });
 
   useEffect(() => {
@@ -54,14 +55,8 @@ export function AdminResolutionPanel({
   // --- TIME LOGIC ---
   useEffect(() => {
     const checkTime = () => {
-      // 1. Get Current Time in SECONDS (Date.now() is ms)
       const now = Math.floor(Date.now() / 1000);
-
-      // 2. Safely convert Blockchain BigInt to Number
-      // e.g., 1768340825n -> 1768340825
       const departureTimeSeconds = Number(departureTimestamp);
-
-      // 3. Calculate Unlock Time (1 Hour after departure)
       const unlockTime = departureTimeSeconds + 3600;
 
       if (now >= unlockTime) {
@@ -70,8 +65,6 @@ export function AdminResolutionPanel({
       } else {
         setCanResolve(false);
         const diff = unlockTime - now;
-
-        // Calculate days, hours, minutes
         const days = Math.floor(diff / 86400);
         const hours = Math.floor((diff % 86400) / 3600);
         const minutes = Math.floor((diff % 3600) / 60);
@@ -87,42 +80,75 @@ export function AdminResolutionPanel({
     };
 
     checkTime();
-    const timer = setInterval(checkTime, 1000); // Update every second for smooth countdown
+    const timer = setInterval(checkTime, 1000);
     return () => clearInterval(timer);
   }, [departureTimestamp]);
 
-  if (!address || address.toLowerCase() !== ADMIN_ADDRESS.toLowerCase()) {
+  // --- ADMIN CHECK ---
+  const currentAddr = address?.toLowerCase();
+  const allowedAdmins = [
+    ADMIN_ADDRESS.toLowerCase(),
+    "0x08C0721aC862C243c8162C8EC1F39D1928baFc01".toLowerCase(),
+    "0x9E1809ca97C5215298B7465d69b0A5C075F0d04C".toLowerCase(),
+  ];
+
+  if (!currentAddr || !allowedAdmins.includes(currentAddr) || isResolved) {
     return null;
   }
 
-  if (isResolved) return null;
+  // Optional: Hide if resolved (uncomment if desired)
+  // if (isResolved) return null;
 
-  const handleResolve = (outcomeIndex: number) => {
-    const toastId = toast.loading("Confirming resolution...");
+  // --- RESOLVE HANDLER (PARTICLE NATIVE) ---
+  const handleResolve = async (outcomeIndex: number) => {
+    if (!primaryWallet) {
+      toast.error("Wallet Disconnected");
+      return;
+    }
 
-    resolveMarket(
-      {
-        address: skyOddsAddress,
+    const toastId = toast.loading("Processing resolution...");
+
+    try {
+      setIsSubmitting(true);
+      const walletClient = primaryWallet.getWalletClient();
+      const account = primaryWallet.accounts[0];
+
+      // 2. Encode Data Manually
+      const data = encodeFunctionData({
         abi: skyOddsAbi,
         functionName: "resolveMarket",
         args: [marketId as `0x${string}`, outcomeIndex],
-      },
-      {
-        onSuccess: () => {
-          toast.dismiss(toastId);
-          toast.info("Transaction Sent", {
-            description: "Waiting for blockchain confirmation...",
-          });
-        },
-        onError: (err) => {
-          toast.dismiss(toastId);
-          toast.error("Error", {
-            description: err.message.split("\n")[0],
-          });
-        },
-      }
-    );
+      });
+
+      // 3. Send Transaction
+      const hash = await walletClient.sendTransaction({
+        to: skyOddsAddress,
+        data: data,
+        account: account as `0x${string}`,
+        chain: undefined,
+        value: 0n,
+      });
+
+      // 4. Track Hash
+      setTxHash(hash);
+
+      toast.dismiss(toastId);
+      toast.info("Transaction Sent", {
+        description: "Waiting for blockchain confirmation...",
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.dismiss(toastId);
+      toast.dismiss("switch");
+      toast.error("Error", {
+        description: err.message?.split("\n")[0] || "Transaction failed",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isWorking = isSubmitting || isConfirming;
 
   return (
     <Card className="border-2 border-dashed border-zinc-200 bg-zinc-50/50 shadow-none mt-12 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -159,48 +185,44 @@ export function AdminResolutionPanel({
           </p>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* 1. ON TIME */}
             <Button
               variant="outline"
               className="h-12 border-zinc-200 hover:border-black hover:bg-zinc-50 text-zinc-700 hover:text-black font-bold transition-all"
-              disabled={!canResolve || isPending || isConfirming}
+              disabled={!canResolve || isWorking}
               onClick={() => handleResolve(1)}
             >
               On Time
             </Button>
 
-            {/* 2. DELAYED > 30 */}
             <Button
               variant="outline"
               className="h-12 border-zinc-200 hover:border-black hover:bg-zinc-50 text-zinc-700 hover:text-black font-bold transition-all"
-              disabled={!canResolve || isPending || isConfirming}
+              disabled={!canResolve || isWorking}
               onClick={() => handleResolve(2)}
             >
               Delay {">"} 30m
             </Button>
 
-            {/* 3. DELAYED > 120 */}
             <Button
               variant="outline"
               className="h-12 border-zinc-200 hover:border-black hover:bg-zinc-50 text-zinc-700 hover:text-black font-bold transition-all"
-              disabled={!canResolve || isPending || isConfirming}
+              disabled={!canResolve || isWorking}
               onClick={() => handleResolve(3)}
             >
               Delay {">"} 2h
             </Button>
 
-            {/* 4. CANCELLED */}
             <Button
               variant="outline"
               className="h-12 border-zinc-200 hover:border-black hover:bg-zinc-50 text-zinc-700 hover:text-black font-bold transition-all"
-              disabled={!canResolve || isPending || isConfirming}
+              disabled={!canResolve || isWorking}
               onClick={() => handleResolve(4)}
             >
               Cancelled
             </Button>
           </div>
 
-          {(isPending || isConfirming) && (
+          {isWorking && (
             <div className="flex items-center justify-center gap-2 text-xs font-bold text-zinc-900 bg-zinc-100 p-3 rounded border border-zinc-200 animate-pulse">
               <Loader2 className="h-3 w-3 animate-spin" />
               <span>Finalizing Settlement on Blockchain...</span>
