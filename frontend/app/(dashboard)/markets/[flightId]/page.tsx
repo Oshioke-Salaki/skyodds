@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react"; // <--- 1. Import 'use'
+import React, { useState, useEffect, use } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,7 @@ import {
   Ban,
   Timer,
   Loader2,
+  BarChart3, // Imported icon for Volume
 } from "lucide-react";
 import Link from "next/link";
 import { OrderForm } from "@/components/markets/order-form";
@@ -21,24 +22,28 @@ import { MarketGraph } from "@/components/market-graph";
 import { MarketAnalysis } from "@/components/markets/market-analysis";
 import { ClaimWinningsCard } from "@/components/markets/claim-winnings-card";
 import { AdminResolutionPanel } from "@/components/markets/admin-resolution-panel";
+// 1. Import the new hook
+import { useMarketVolume } from "@/hooks/useMarketVolume";
 
 export default function MarketPage({
   params,
 }: {
-  params: Promise<{ flightId: string }>; // <--- 2. Update Type to Promise
+  params: Promise<{ flightId: string }>;
 }) {
-  // 3. Unwrap the params using React.use()
   const { flightId } = use(params);
-
   const { markets, isLoading } = useAllMarkets();
 
-  // 4. Use 'flightId' directly instead of 'params.flightId'
+  // 2. Fetch Volume
+  const { volume, isLoading: isVolumeLoading } = useMarketVolume(flightId);
+
+  useEffect(() => {
+    console.log(volume);
+  }, [volume]);
+
   const marketData = markets.find((m) => m.id === flightId);
 
-  // State for UI selection
   const [activeMarketId, setActiveMarketId] = useState<string>("");
 
-  // Construct Submarkets dynamically from Contract Data
   const dynamicSubmarkets: SubMarket[] = marketData
     ? [
         {
@@ -100,7 +105,6 @@ export default function MarketPage({
       ]
     : [];
 
-  // Set default active market once data loads
   useEffect(() => {
     if (dynamicSubmarkets.length > 0 && !activeMarketId) {
       setActiveMarketId(dynamicSubmarkets[1].id);
@@ -126,7 +130,6 @@ export default function MarketPage({
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6">
-      {/* Top Nav */}
       <div className="flex items-center gap-4">
         <Link href="/markets">
           <Button
@@ -138,14 +141,13 @@ export default function MarketPage({
           </Button>
         </Link>
       </div>
-      {marketData.status !== "Unresolved" && (
-        <ClaimWinningsCard marketId={marketData.id} />
-      )}
+      {/* {marketData.status !== "Unresolved" && ( */}
+      <ClaimWinningsCard marketId={marketData.id} />
+      {/* )} */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* --- LEFT COL: SUBMARKETS LIST --- */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Header */}
+          {/* --- HEADER SECTION --- */}
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 border-b border-zinc-200 pb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -159,19 +161,33 @@ export default function MarketPage({
                   {marketData.route}
                 </Badge>
               </div>
-              <p className="text-zinc-500">
-                Departure: {marketData.departureTime} • Status:{" "}
-                {marketData.status}
-              </p>
+              <div className="flex items-center gap-4 text-sm text-zinc-500 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-zinc-400" />
+                  {marketData.departureTime}
+                </span>
+                <span className="w-1 h-1 rounded-full bg-zinc-300" />
+                <span className="flex items-center gap-1.5">
+                  Status:{" "}
+                  <span className="text-zinc-900 font-bold">
+                    {marketData.status}
+                  </span>
+                </span>
+
+                {/* 3. NEW: Volume Display */}
+                <span className="w-1 h-1 rounded-full bg-zinc-300" />
+                <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  Vol: {isVolumeLoading ? "..." : volume}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Graph Section */}
           <div className="mb-8">
             <MarketGraph flightId={marketData.id} />
           </div>
 
-          {/* The Submarket Table */}
           <div>
             <h3 className="text-lg font-bold text-zinc-900 mb-4">
               Available Markets
@@ -183,7 +199,6 @@ export default function MarketPage({
             />
           </div>
 
-          {/* AI Insights */}
           <MarketAnalysis
             flightNumber={marketData.flightNumber}
             route={marketData.route}
@@ -200,15 +215,12 @@ export default function MarketPage({
           </div>
         </div>
 
-        {/* --- RIGHT COL: ORDER FORM --- */}
         <div className="lg:col-span-4">
           <div className="space-y-4">
-            {/* 1. NEW: User Positions Card */}
             <UserPositionsCard
               flightId={marketData.id}
               isResolved={isMarketResolved}
             />
-            {/* Visual Indicator */}
             <div className="p-4 bg-zinc-900 rounded-lg flex items-center gap-4 shadow-lg text-white">
               <div className="p-2 bg-zinc-800 rounded">
                 <activeMarket.icon className="w-6 h-6 text-zinc-300" />
@@ -223,7 +235,6 @@ export default function MarketPage({
               </div>
             </div>
 
-            {/* Order Form */}
             <OrderForm
               market={{
                 id: marketData.id,

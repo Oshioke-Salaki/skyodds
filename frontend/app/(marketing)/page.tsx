@@ -27,18 +27,6 @@ export default function LandingPage() {
           <span className="text-lg font-bold tracking-tight">Outcome</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-500">
-          <a href="#features" className="hover:text-black transition-colors">
-            Protocol
-          </a>
-          <Link href="/markets" className="hover:text-black transition-colors">
-            Markets
-          </Link>
-          <a href="#privacy" className="hover:text-black transition-colors">
-            Governance
-          </a>
-        </div>
-
         <div className="flex items-center gap-4">
           <Link href="/markets">
             <Button

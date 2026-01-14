@@ -38,7 +38,7 @@ export function CreateMarketForm() {
     origin: "LHR",
     destination: "JFK",
     departureTime: "",
-    liquidity: "1000",
+    liquidity: "0",
   });
 
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
@@ -253,7 +253,7 @@ export function CreateMarketForm() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label className="text-xs font-bold text-zinc-500 uppercase">
               Initial Liquidity (b)
             </Label>
@@ -270,7 +270,7 @@ export function CreateMarketForm() {
                 className="pl-10 font-mono bg-zinc-50/50"
               />
             </div>
-          </div>
+          </div> */}
         </div>
       </CardContent>
 

@@ -28,7 +28,7 @@ export function UserPositionsCard({
 }: UserPositionsCardProps) {
   const { positions, hasClaimed, isLoading, refetch } =
     useUserPositions(flightId);
-  const { writeContractAsync: claimWinnings } = useWriteSkyOddsClaimWinnings();
+  const { mutateAsync: claimWinnings } = useWriteSkyOddsClaimWinnings();
   const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
@@ -109,7 +109,7 @@ export function UserPositionsCard({
         ))}
 
         {/* Claim UI */}
-        {hasClaimed ? (
+        {/* {hasClaimed ? (
           <div className="p-4 bg-emerald-50/50 flex items-center justify-center gap-2 text-emerald-700 font-bold text-sm">
             <CheckCircle2 className="w-4 h-4" /> Winnings Claimed
           </div>
@@ -128,7 +128,7 @@ export function UserPositionsCard({
               Claim Winnings
             </Button>
           </div>
-        ) : null}
+        ) : null} */}
       </div>
     </Card>
   );

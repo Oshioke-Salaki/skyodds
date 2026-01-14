@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { WalletButton } from "./wallet-button";
 import { FaucetButton } from "../layout/faucet-button";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { usePortfolio } from "@/hooks/usePortfolio";
 
 const navItems = [
   { name: "Markets", href: "/markets", icon: Plane },
@@ -15,6 +16,7 @@ const navItems = [
 ];
 
 export function Navbar() {
+  const { positions, stats, isLoading: isLoadingPortfolio } = usePortfolio();
   const pathname = usePathname();
   const { balance, isLoading } = useUserBalance();
 
@@ -59,14 +61,14 @@ export function Navbar() {
       </div>
 
       {/* Right: Wallet Actions & Balance */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3">
         <div className="hidden lg:flex items-center gap-8">
           <div className="flex flex-col items-start translate-y-[1px]">
             <div className="text-[11px] font-semibold text-zinc-400 leading-none mb-1.5">
               Portfolio
             </div>
             <p className="text-[15px] font-bold text-emerald-500 font-mono leading-none">
-              $0.00
+              ${stats.totalValue.toFixed(2)}
             </p>
           </div>
 
